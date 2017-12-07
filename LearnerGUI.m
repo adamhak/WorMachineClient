@@ -446,3 +446,13 @@ imwrite(toBeSaved.cdata, fileName, 'bmp');
 function back_ClickedCallback(hObject, eventdata, handles)
 close all
 WorMachine
+
+
+%% HELP  ------------------------------------------------------------------
+function Untitled_1_Callback(hObject, eventdata, handles)
+
+function about_Callback(hObject, eventdata, handles)
+web('http://www.odedrechavilab.com/')
+
+function manual_Callback(hObject, eventdata, handles)
+open('lib/WorMachine_Manual.pdf')

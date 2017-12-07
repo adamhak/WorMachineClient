@@ -9,30 +9,30 @@ for i=1:length(CurrentImages)
     end
 end
 
-% maxsize=max(sizes,[],1);
-% nmax=maxsize(1);  mmax=maxsize(2);
-% meansize=round(mean(sizes,1));
-% nmean=meansize(1); mmean=meansize(2);
-% mediansize=round(median(sizes,1));
-% nmedian=mediansize(1); mmedian=mediansize(2);
-zscored=zscore(sizes);
-nz=sizes(find(zscored(:,1)>1 & zscored(:,1)<1.2,1,'first'),1);
-mz=sizes(find(zscored(:,2)>1 & zscored(:,2)<1.2,1,'first'),2);
-
+%Parameters
 scaledsize=[64,128];
-n=nz ; m=mz;
+q=0.65;
+nq = quantile(sizes(:,1),q); mq = quantile(sizes(:,2),q); 
+n=nq ; m=nq*2;
+
+%Padding and Rescale
 for i=1:length(CurrentImages)
     img=CurrentImages{i};
-    
-    %Match Aspect Ratio with padding
+    %Match Wanted Aspect Ratio with padding
     ratio=size(img,1)/size(img,2);
-    if size(img,1)<n & size(img,2)>=m
+    if size(img,1)<n && size(img,2)>=m
+        %Pad rows to obtain wanted aspect ratio
         neededn=round((size(img,2)/m)*n);
         img2=padarray(img,[round(0.5*(neededn-sizes(i,1))) 0]);
-    elseif size(img,1)>=n & size(img,2)<m
+    elseif size(img,1)>=n && size(img,2)<m
+        %Pad columns to obtain wanted aspect ratio
         neededm=round((size(img,1)/n)*m);
         img2=padarray(img,[0 round(0.5*(neededm-sizes(i,2)))]);
-    else
+    elseif size(img,1)<n && size(img,2)<m
+        %Pad Smaller Objects on both dimensions
+        img2=padarray(img,[round(0.5*(n-sizes(i,1))) round(0.5*(m-sizes(i,2)))]);
+    elseif size(img,1)>=n && size(img,2)>=m
+        %Pad only 1 dimension of larger objects, to obtain ratio
         if ratio<n/m
            neededn=round((size(img,2)/m)*n);
            img2=padarray(img,[round(0.5*(neededn-sizes(i,1))) 0]);
@@ -40,12 +40,7 @@ for i=1:length(CurrentImages)
             neededm=round((size(img,1)/n)*m);
             img2=padarray(img,[0 round(0.5*(neededm-sizes(i,2)))]);
         end
-    end
-    
-    %Pad Smaller Objects
-    if size(img,1)<n & size(img,2)<m
-       img2=padarray(img2,[round(0.5*(n-sizes(i,1))) round(0.5*(m-sizes(i,2)))]);
-    end
+    end    
     
     %Scale all images to 'scaledsize'
     img3=imresize(img2,scaledsize);

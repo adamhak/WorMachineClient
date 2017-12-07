@@ -76,19 +76,20 @@ function worm_names_Callback(hObject, eventdata, handles)
 if ~isfield(handles,'Masks')
     return
 end
-[filename, pathname]=uigetfile({'*.mat;*.xlsx','MAT/Excel'},'Browse for WormData .mat or .xlsx File',handles.dirname);
-filename
-if ~isempty(strfind(filename,'.xlsx'))
-   [~,~,RAW]=xlsread(fullfile(pathname,filename));
-   WormNames=RAW(2:end,1);
-elseif ~isempty(strfind(filename,'.mat'))
+[filename, pathname]=uigetfile({'*.mat;*.xlsx;*.csv','MAT/Excel/CSV'},'Browse for WormData .mat or .xlsx File',handles.dirname);
+if contains(filename,'.xlsx')
+   [~,~,RAW]=xlsread(fullfile(pathname,filename),'WormData');
+   WormNames=RAW(2:end,strcmp('Worm_Names',RAW(1,:)));
+elseif contains(filename,'.mat')
    tempdata=load(fullfile(pathname,filename));    
    WormNames=tempdata.WormData.Names;
-elseif ~isempty(strfind(filename,'.csv'))
-    
+elseif contains(filename,'.csv')
+   M = csvread(fullfile(pathname,filename)); 
+   WormNames=M(2:end,strcmp('Worm_Names',M(1,:)));
 elseif filename==0
-    
+    return
 end
+
 clear tempdata RAW
 actionflag=false;
 for i=length(handles.Masks):-1:1
@@ -179,7 +180,7 @@ if isfield(handles,'Masks')
     handles.datasaved=1;
 end
 handles.rmvcount=0;
-handles.rmvind=[];
+handles.rmvnames={};
 set(handles.current_worm,'string','Loading Mask Images...');
 pause(0.0001);
 set(handles.check_area,'Value',0);
@@ -188,7 +189,7 @@ set(handles.check_thick,'Value',0);
 set(handles.check_mid,'Value',0);
 set(handles.check_headtail,'Value',0);
 set(handles.check_peaks,'Value',0);
-set(handles.check_ctcf,'Value',0);
+set(handles.check_ctwf,'Value',0);
 set(handles.check_labels,'Value',0);
 set(handles.check_bodybf,'Value',0);
 set(handles.check_rid,'Value',0);
@@ -273,22 +274,28 @@ if ~isfield(handles,'liststring')
 end
 set(handles.current_worm,'string','Preparing Worms for WormNet...');
 pause(0.00001)
+
+%Prepare Images for WormNet
 CurrentImages=[];
 for i=1:length(handles.Masks)
     CurrentImages{i}=handles.Masks(i).Image;
 end
-%Prepare Images for WormNet
 WormNetImages=prepare4wormnet(CurrentImages);
 
-%load
-set(handles.current_worm,'string','Classifying Worms...');
-pause(0.00001)
-temp=load('lib\WormNet.mat');
-handles.WormNet=temp.WormNet;
+%load WormNet
+if ~isfield(handles,'WormNet')
+    set(handles.current_worm,'string','Classifying Worms...');
+    pause(0.00001)
+    temp=load('lib\WormNet.mat');
+    handles.WormNet=temp.WormNet;
+    handles.NetOptions=temp.options;
+end
 
 %Predict
 predY=double(classify(handles.WormNet,WormNetImages));
-save('WormNetImages.mat','WormNetImages','predY') %%%%% SAVE %%%%
+
+%Save Images and Prediction - for testing images preparations
+% save('WormNetImages.mat','WormNetImages','predY') %%%%% SAVE %%%%
 
 %Update Worm List
 indx1=find(predY==2);
@@ -415,7 +422,7 @@ if isfield(handles.Masks, 'Peaks')
     set(handles.num_peaks,'string',handles.Masks(ind).NPeaks)
     set(handles.mean_peaks,'string',handles.Masks(ind).MeanPeaks)
     set(handles.std_peaks,'string',handles.Masks(ind).STDPeaks)
-    set(handles.ctcf,'string',handles.Masks(ind).CTCF)
+    set(handles.ctwf,'string',handles.Masks(ind).CTWF)
     set(handles.rid,'string',handles.Masks(ind).RID)
     set(handles.actual_thresh,'string',handles.Masks(ind).flour_thr);
 end
@@ -446,13 +453,14 @@ end
 handles.datasaved=0;
 inds=get(handles.masknames,'Value');
 for ind=inds(end:-1:1)
+    %Log removed worm
+    handles.rmvcount=handles.rmvcount+1;
+    handles.rmvnames{handles.rmvcount}=handles.Masks(ind).Filenames;
     %Clear worm data
     handles.Masks(ind)=[];
     handles.liststring(ind)=[];
-    %Log removed worm
-    handles.rmvcount=handles.rmvcount+1;
-    handles.rmvind(1,handles.rmvcount)=ind;
 end
+
 %Handle first and last index
 if max(inds)>1 && max(inds)<length(handles.liststring)
     set(handles.masknames,'Value',min(inds));
@@ -686,13 +694,13 @@ for i=1:length(handles.liststring)
 end
 
 ZAreas=zscore(Areas);
-indx1=find([(ZAreas>1.5) + (ZAreas<-1)]);
+indx1=find([(ZAreas>1.5) + (ZAreas<-1.5)]);
 for i=indx1
     handles.Masks(i).WormFlag=1;
     handles.liststring{i}=sprintf('<HTML><BODY bgcolor="%s">%s', 'yellow', handles.Masks(i).Filenames);
 end
 ZLengths=zscore(Lengths);
-indx2=find([(ZLengths>1.5) + (ZLengths<-1)]);
+indx2=find([(ZLengths>1.5) + (ZLengths<-1.5)]);
 for i=indx2
     handles.Masks(i).WormFlag=1;
     handles.liststring{i}=sprintf('<HTML><BODY bgcolor="%s">%s', 'yellow', handles.Masks(i).Filenames);
@@ -1004,7 +1012,7 @@ if isfield(handles.Masks,'FluorImg')
         end
         handles.Masks(i).MeanBG=mean(BGIntensity);
         handles.Masks(i).RID=sum(sum(fluorimg))-sum(sum(mask))*mean(BGIntensity);
-        handles.Masks(i).CTCF=mean2(fluorimg(mask))*bwarea(mask)-bwarea(mask)*mean(BGIntensity);
+        handles.Masks(i).CTWF=mean2(fluorimg(mask))*bwarea(mask)-bwarea(mask)*mean(BGIntensity);
         clear background k
         if handles.Masks(i).NPeaks>0
             for k=1:handles.Masks(i).NPeaks
@@ -1025,7 +1033,7 @@ if isfield(handles.Masks,'FluorImg')
             disp(['Worm Failed Fluorescent Analysis: ' handles.Masks(i).Filenames])
             handles.Masks(i).MeanPeaks=NaN;
             handles.Masks(i).STDPeaks=NaN;
-            handles.Masks(i).CTCF=NaN;
+            handles.Masks(i).CTWF=NaN;
             handles.Masks(i).NPeaks=NaN;
             handles.Masks(i).Peaks=NaN;
             handles.Masks(i).PeakAreas=NaN;
@@ -1035,7 +1043,7 @@ if isfield(handles.Masks,'FluorImg')
     end
     %Update checkbox and status
     set(handles.check_peaks,'Value',1);
-    set(handles.check_ctcf,'Value',1);
+    set(handles.check_ctwf,'Value',1);
     set(handles.check_rid,'Value',1);
     set(handles.current_worm,'string','Analysis Complete!');
     handles.imgtype=2;
@@ -1377,9 +1385,9 @@ for i=1:length(handles.Masks)
         WormData.Features{col}='STD_Peak_Intensity';
         col=col+1;
     end
-    if get(handles.check_ctcf,'Value')
-        WormData.X(i,col)=handles.Masks(i).CTCF;
-        WormData.Features{col}='CTCF';
+    if get(handles.check_ctwf,'Value')
+        WormData.X(i,col)=handles.Masks(i).CTWF;
+        WormData.Features{col}='CTWF';
         col=col+1;
     end
     if get(handles.check_rid,'Value')
@@ -1434,6 +1442,17 @@ else
     verify_exit
 end
 
+
+% --------------------------------------------------------------------
+function nexttool_ClickedCallback(hObject, eventdata, handles)
+if handles.datasaved
+    close all
+    LearnerGUI
+else
+    verify_exit
+end
+
+
 %% DISPLAY OPTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------
 function display_Callback(hObject, eventdata, handles)
@@ -1447,32 +1466,74 @@ else
 end
 masknames_Callback(hObject, eventdata, handles)
 
-%% HELP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Untitled_1_Callback(hObject, eventdata, handles)
-
+%% Retrain WormNet %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------
-function help_Callback(hObject, eventdata, handles)
+function wmnet_Callback(hObject,eventdata,handles)
 
-% --------------------------------------------------------------------
-function load_Callback(hObject, eventdata, handles)
+function retrain_Callback(hObject, eventdata, handles)
+%Check for generated
+if ~isfield(handles,'liststring')
+    set(handles.current_worm,'string','No Worms Generated!');
+    return
+end
+set(handles.current_worm,'string','Preparing Worms for WormNet...');
+pause(0.00001)
 
-% --------------------------------------------------------------------
-function morph_Callback(hObject, eventdata, handles)
+%Validate ReTraining
+output = retrain_validate;
+if strcmp(output,'No')
+    set(handles.current_worm,'string','Retraining Aborted!');
+    return
+end
 
-% --------------------------------------------------------------------
-function head_tail_Callback(hObject, eventdata, handles)
+%Prepare Images for WormNet
+CurrentImages=[];
+for i=1:length(handles.Masks)
+    CurrentImages{i}=handles.Masks(i).Image;
+end
+WormNetImages=prepare4wormnet(CurrentImages);
 
-% --------------------------------------------------------------------
-function floure_Callback(hObject, eventdata, handles)
+%load
+if ~isfield(handles,'WormNet')
+    set(handles.current_worm,'string','ReTraining WormNet...');
+    pause(0.00001)
+    temp=load('lib\WormNet.mat');
+    handles.WormNet=temp.WormNet;
+    handles.NetOptions=temp.options;
+end
 
-% --------------------------------------------------------------------
-function labels_Callback(hObject, eventdata, handles)
+%Collect Labels
+Y=zeros(size(WormNetImages,4),1);
+for i=1:length(handles.Masks)
+    if handles.Masks(i).WormFlag
+        Y(i)=1;
+    end
+end
 
-% --------------------------------------------------------------------
-function saving_Callback(hObject, eventdata, handles)
+%Retrain Network
+handles.WormNet = trainNetwork(WormNetImages,categorical(Y),handles.WormNet.Layers,handles.NetOptions);
+set(handles.current_worm,'string','WormNet Trained with New Worms!');
+guidata(hObject, handles);
 
+%--------------------------------------------------------------------------
+function save_wormnet_Callback(hObject, eventdata, handles)
+temp=load('lib\WormNet.mat');
+WormNet=handles.WormNet;
+layers=temp.layers; imds=temp.imds; trainData=temp.trainData;
+testData=temp.testData; options=temp.options;
+save('lib/WormNet.mat','WormNet','layers','imds','trainData','testData','options')
+set(handles.current_worm,'string','New WormNet Saved!');
+
+
+%% Help %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------
 function about_Callback(hObject, eventdata, handles)
+web('http://www.odedrechavilab.com/')
+
+function manual_Callback(hObject, eventdata, handles)
+open('lib/WorMachine_Manual.pdf')
+
+
 
 %% Key Shortcuts %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes on key press with focus on masknames and none of its controls.
@@ -1540,3 +1601,4 @@ guidata(hObject, handles);
 %% Do NOT Delete
 % --- Executes on key press with focus on figure1 or any of its controls.
 function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
+

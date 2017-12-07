@@ -798,53 +798,6 @@ Congratulations()
 guidata(hObject, handles);
 
 
-%% --- Executes on button press in back. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function backtool_ClickedCallback(hObject, eventdata, handles)
-close all
-WorMachine
-
-% --------------------------------------------------------------------
-function next_ClickedCallback(hObject, eventdata, handles)
-if isfield(handles, 'outpath') && handles.saved
-   close all
-   FeaturesGUI(handles.outpath) 
-else
-   close all
-   FeaturesGUI
-end
-
-
-%% HELP ------------------------------------------------------------- %%%%
-function help_Callback(hObject, eventdata, handles)
-
-function import_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function tif_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function bio_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function formats_help_Callback(hObject, eventdata, handles)
-web('https://www.openmicroscopy.org/site/support/bio-formats5.1/supported-formats.html');
-
-% --------------------------------------------------------------------
-function load_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function bin_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function id_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function save_help_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function preset_help_Callback(hObject, eventdata, handles)
-
-
 
 %% Preset Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function presets_Callback(hObject, eventdata, handles)
@@ -892,3 +845,29 @@ set(handles.obj_10,'Checked','off');
 set(handles.custom_preset,'Checked','on');
 settingsgui()
 guidata(hObject, handles);
+
+
+%% --- Executes on button press in back. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function backtool_ClickedCallback(hObject, eventdata, handles)
+close all
+WorMachine
+
+% --------------------------------------------------------------------
+function next_ClickedCallback(hObject, eventdata, handles)
+if isfield(handles, 'outpath') && handles.saved
+   close all
+   FeaturesGUI(handles.outpath) 
+else
+   close all
+   FeaturesGUI
+end
+
+
+%% HELP ------------------------------------------------------------- %%%%
+function help_Callback(hObject, eventdata, handles)
+
+function about_Callback(hObject, eventdata, handles)
+web('http://www.odedrechavilab.com/')
+
+function manual_Callback(hObject, eventdata, handles)
+open('lib/WorMachine_Manual.pdf')
