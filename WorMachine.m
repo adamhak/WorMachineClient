@@ -28,7 +28,7 @@ clc
 addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
 cd(PATHSTR);
-handles.logo=imread('WMlogo.png');
+handles.logo=imread('lib\WMlogo.png');
 axes(handles.axes1); imshow(handles.logo);
 k=get(gcf,'color');
 set(gcf,'color','w')
