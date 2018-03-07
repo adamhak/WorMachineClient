@@ -136,7 +136,7 @@ clear tempdata RAW labelcol
 actionflag=false;
 for i=1:length(handles.Masks)
     if ismember(handles.Masks(i).Filenames,WormNames)
-        ind=find(strcmp(WormNames,handles.Masks(i).Filenames));
+        ind=find(strcmp(WormNames,handles.Masks(i).Filenames),1,'first');
         handles.Masks(i).Label=Labels(ind);
         set(handles.current_worm,'string','Extracing and Updating Labels...');
         actionflag=true;
@@ -151,7 +151,6 @@ end
 masknames_Callback(hObject, eventdata, handles)
 uicontrol(handles.masknames)
 guidata(hObject, handles)
-
 
 
 %% --- Executes on button press in loadimages. %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1098,7 +1097,7 @@ for ind=inds
     if isstrprop(label, 'digit')
         label=str2double(label);
     end
-    handles.Masks(ind).Label=label;
+    handles.Masks(ind).Label={label};
     set(handles.labeled,'string',label)
 end
 count_labels(hObject, eventdata, handles)
@@ -1116,7 +1115,7 @@ if isstrprop(label, 'digit')
     label=str2double(label);
 end
 for i=1:length(handles.Masks)
-    handles.Masks(i).Label=label;
+    handles.Masks(i).Label={label};
 end
 set(handles.labeled,'string',handles.Masks(handles.currentmask).Label)
 guidata(hObject, handles);
@@ -1299,11 +1298,12 @@ ExcArray(2:(size(WormData.X,1)+1),1:size(WormData.X,2))=num2cell(WormData.X);
 %Add Labels
 if isfield(handles.Masks, 'Label') && get(handles.check_labels,'Value')
     ExcArray(:,end+1)={'Labels'};
-    if isnumeric(WormData.Y)
-        ExcArray(2:(size(WormData.Y,1)+1),size(ExcArray,2))=num2cell(WormData.Y);
-    else
-        ExcArray(2:(size(WormData.Y,1)+1),size(ExcArray,2))=cellstr(WormData.Y);
-    end
+    ExcArray(2:(size(WormData.Y,1)+1),size(ExcArray,2))=WormData.Y;
+%     if isnumeric(WormData.Y)
+%         ExcArray(2:(size(WormData.Y,1)+1),size(ExcArray,2))=num2cell(WormData.Y);
+%     else
+%         ExcArray(2:(size(WormData.Y,1)+1),size(ExcArray,2))=cellstr(WormData.Y);
+%     end
 end
 
 %Add Worm Names
@@ -1416,7 +1416,7 @@ for i=1:length(handles.Masks)
         if ~isempty(handles.Masks(i).Label)
             WormData.Y(i,:)=handles.Masks(i).Label;
         else
-            WormData.Y(i,:)=NaN;
+            WormData.Y(i,:)={NaN};
         end
     end
     WormData.Names(i,1)={handles.Masks(i).Filenames};
@@ -1602,3 +1602,5 @@ guidata(hObject, handles);
 % --- Executes on key press with focus on figure1 or any of its controls.
 function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 
+% --------------------------------------------------------------------
+function export_Callback(hObject, eventdata, handles)

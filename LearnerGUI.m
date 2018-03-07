@@ -61,6 +61,9 @@ set(handles.excluded,'value',1);
 set(handles.samples,'string',n);
 set(handles.features,'string',m);
 if isfield(handles.WormData,'Y')
+    if all(iscell(handles.WormData.Y))
+   handles.WormData.Y=cell2mat(handles.WormData.Y);
+    end
    handles.Labeled=1;
    classes=unique(handles.WormData.Y);
    printing=num2str(classes(1));

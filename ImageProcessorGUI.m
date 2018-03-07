@@ -355,6 +355,9 @@ guidata(hObject, handles);
 function neighbors_Callback(hObject, eventdata, handles)
 
 function neighprecent_Callback(hObject, eventdata, handles)
+if ~isfield(handles,'OrgImg')
+    return
+end
 [m, n]=size(handles.OrgImg);
 neighprecent=str2double(get(handles.neighprecent,'String'))/100;
 set(handles.actual_neighbors,'String',num2str(round((m+n)/2*neighprecent)));
@@ -742,6 +745,8 @@ for folder=1:length(folders) %folders loop
                 end
                 BFind=find(modes==max(modes));
                 handles.FirstCopy=handles.Planes{BFind};
+                handles.OrgImg=handles.FirstCopy;
+                
                 %Update GUI
                 set(handles.input_path,'String',handles.inpath)
                 set(handles.planes_list,'string',handles.planenames)

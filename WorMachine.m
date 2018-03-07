@@ -29,12 +29,7 @@ addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
 cd(PATHSTR);
 handles.logo=imread('WMlogo.png');
-% handles.logo=imread('logo2.jpg');
-% handles.logo=imread('logo4.jpg');
-% handles.logo=imread('logo3.png');
 axes(handles.axes1); imshow(handles.logo);
-% axis image;
-% axis off;
 k=get(gcf,'color');
 set(gcf,'color','w')
 
