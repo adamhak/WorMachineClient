@@ -132,6 +132,11 @@ elseif ~isempty(strfind(filename,'.mat'))
    WormNames=tempdata.WormData.Names;
    Labels=tempdata.WormData.Y;
 end
+
+if any(~iscell(Labels))
+    Labels=num2cell(Labels);
+end
+
 clear tempdata RAW labelcol
 actionflag=false;
 for i=1:length(handles.Masks)
@@ -1414,13 +1419,21 @@ for i=1:length(handles.Masks)
     end
     if isfield(handles.Masks, 'Label') && get(handles.check_labels,'Value')
         if ~isempty(handles.Masks(i).Label)
-            WormData.Y(i,:)=handles.Masks(i).Label;
+            if ~iscell(handles.Masks(i).Label)
+                handles.Masks(i).Label={handles.Masks(i).Label};
+            end
+            WormData.Y(i,1)=handles.Masks(i).Label;
         else
-            WormData.Y(i,:)={NaN};
+            WormData.Y(i,1)={NaN};
         end
     end
     WormData.Names(i,1)={handles.Masks(i).Filenames};
 end
+
+if all(~iscell(WormData.Y))
+    WormData.Y=num2cell(WormData.Y);
+end
+
 %Add Peak Sizes
 if get(handles.check_peaks,'Value')
     peaks_col=find(strcmp(WormData.Features,'Number_of_Peaks'));
@@ -1592,7 +1605,7 @@ end
 % ind=handles.currentmask;
 inds=get(handles.masknames,'Value');
 for ind=inds
-    handles.Masks(ind).Label=str2double(key);
+    handles.Masks(ind).Label={str2double(key)};
 end
 set(handles.labeled,'string',key)
 count_labels(hObject, eventdata, handles)
