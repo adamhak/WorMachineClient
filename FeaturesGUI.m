@@ -197,6 +197,7 @@ set(handles.check_ctwf,'Value',0);
 set(handles.check_labels,'Value',0);
 set(handles.check_bodybf,'Value',0);
 set(handles.check_rid,'Value',0);
+set(handles.check_ht_ctfw,'Value',0);
 set(handles.labeled,'string','');
 
 
@@ -361,16 +362,22 @@ clear img sizes
 axes(handles.skelimg);
 if isfield(handles.Masks, 'SkCr')
     imshow(handles.Masks(ind).SkCr)
+    if isfield(handles.Masks(ind),'MidCurve') && isfield(handles.Masks(ind),'MidCurve')
     if ~isempty(handles.Masks(ind).MidCurve) && ~isempty(handles.Masks(ind).CurveX1_Edge1)
         hold on
         c1=handles.Masks(ind).C1;
         c2=handles.Masks(ind).C2;
+        if length(c1)~=3 || length(c2)~=3
+            c1=[1 1 1];
+            c2=[1 1 1];
+        end
         plot([handles.Masks(ind).MidCurve(1,1) handles.Masks(ind).MidCurve(2,1)], [handles.Masks(ind).MidCurve(1,2) handles.Masks(ind).MidCurve(2,2)],'Color',[0,0.7,0.9],'linewidth',2)
         plot([handles.Masks(ind).CurveX1_Edge1(1,1) handles.Masks(ind).CurveX1_Edge1(2,1)], [handles.Masks(ind).CurveX1_Edge1(1,2) handles.Masks(ind).CurveX1_Edge1(2,2)],'Color',c1,'linewidth',2)
         plot([handles.Masks(ind).CurveX2_Edge1(1,1) handles.Masks(ind).CurveX2_Edge1(2,1)], [handles.Masks(ind).CurveX2_Edge1(1,2) handles.Masks(ind).CurveX2_Edge1(2,2)],'Color',c1,'linewidth',2)
         plot([handles.Masks(ind).CurveX1_Edge2(1,1) handles.Masks(ind).CurveX1_Edge2(2,1)], [handles.Masks(ind).CurveX1_Edge2(1,2) handles.Masks(ind).CurveX1_Edge2(2,2)],'Color',c2,'linewidth',2)
         plot([handles.Masks(ind).CurveX2_Edge2(1,1) handles.Masks(ind).CurveX2_Edge2(2,1)], [handles.Masks(ind).CurveX2_Edge2(1,2) handles.Masks(ind).CurveX2_Edge2(2,2)],'Color',c2,'linewidth',2)
         hold off
+    end
     end
 else 
     cla
@@ -610,6 +617,8 @@ for i=1:length(handles.liststring)
            handles.Masks(i).MidBodyBF=MeanBody2;
            handles.Masks(i).PosteriorBodyBF=MeanBody3;
            handles.Masks(i).NoHeadMask=~EdgeMask1 & logical(handles.Masks(i).Image);
+           handles.Masks(i).HeadMask=EdgeMask1;
+           handles.Masks(i).TailMask=EdgeMask2;
         else
            handles.Masks(i).Head=handles.Masks(i).R2;
            handles.Masks(i).Tail=handles.Masks(i).R1;
@@ -621,6 +630,8 @@ for i=1:length(handles.liststring)
            handles.Masks(i).MidBodyBF=MeanBody2;
            handles.Masks(i).PosteriorBodyBF=MeanBody1;
            handles.Masks(i).NoHeadMask=~EdgeMask2 & logical(handles.Masks(i).Image);
+           handles.Masks(i).HeadMask=EdgeMask2;
+           handles.Masks(i).TailMask=EdgeMask1;
         end 
                  
         handles.Masks(i).WormFlag=0;
@@ -639,6 +650,8 @@ for i=1:length(handles.liststring)
         handles.Masks(i).AnteriorBodyBF=NaN;
         handles.Masks(i).MidBodyBF=NaN;
         handles.Masks(i).PosteriorBodyBF=NaN;
+        handles.Masks(i).C1=[1 1 1];
+        handles.Masks(i).C2=[1 1 1];
     end
 end
 
@@ -1017,6 +1030,12 @@ if isfield(handles.Masks,'FluorImg')
         handles.Masks(i).MeanBG=mean(BGIntensity);
         handles.Masks(i).RID=sum(sum(fluorimg))-sum(sum(mask))*mean(BGIntensity);
         handles.Masks(i).CTWF=mean2(fluorimg(mask))*bwarea(mask)-bwarea(mask)*mean(BGIntensity);
+        if isfield(handles.Masks(i),'HeadMask')
+            hmask=handles.Masks(i).HeadMask;
+            tmask=handles.Masks(i).TailMask;
+            handles.Masks(i).Head_CTWF=mean2(fluorimg(hmask))*bwarea(hmask)-bwarea(hmask)*mean(BGIntensity);
+            handles.Masks(i).Tail_CTWF=mean2(fluorimg(tmask))*bwarea(tmask)-bwarea(tmask)*mean(BGIntensity);
+        end
         clear background k
         if handles.Masks(i).NPeaks>0
             for k=1:handles.Masks(i).NPeaks
@@ -1042,6 +1061,8 @@ if isfield(handles.Masks,'FluorImg')
             handles.Masks(i).Peaks=NaN;
             handles.Masks(i).PeakAreas=NaN;
             handles.Masks(i).RID=NaN;
+            handles.Masks(i).Head_CTWF=NaN;
+            handles.Masks(i).Tail_CTWF=NaN;
             handles.Masks(i).LabeledImage=zeros(size(handles.Masks(i).FluorImg_noGS));
         end
     end
@@ -1049,6 +1070,7 @@ if isfield(handles.Masks,'FluorImg')
     set(handles.check_peaks,'Value',1);
     set(handles.check_ctwf,'Value',1);
     set(handles.check_rid,'Value',1);
+    set(handles.check_ht_ctfw,'Value',1);
     set(handles.current_worm,'string','Analysis Complete!');
     handles.imgtype=2;
 else
@@ -1059,7 +1081,7 @@ guidata(hObject, handles);
 masknames_Callback(hObject, eventdata, handles)
 uicontrol(handles.masknames)
 guidata(hObject, handles);
-
+masks=handles.Masks;
 
 % --- Executes on button press in color_peaks.
 function color_peaks_Callback(hObject, eventdata, handles)
@@ -1328,7 +1350,6 @@ if get(handles.check_peaks,'Value')
     xlswrite([PathName FileName],WormData.PeakSizes,'PeakAreas');
 end
 
-
 %Rename first sheet
 e = actxserver('Excel.Application'); % # open Activex server
 ewb = e.Workbooks.Open([PathName FileName]); % # open file (enter full path!)
@@ -1395,11 +1416,19 @@ for i=1:length(handles.Masks)
         WormData.Features{col}='CTWF';
         col=col+1;
     end
+    if get(handles.check_ht_ctfw,'Value')
+        WormData.X(i,col)=handles.Masks(i).Head_CTWF;
+        WormData.Features{col}='Head_CTWF';
+        col=col+1;
+        WormData.X(i,col)=handles.Masks(i).Tail_CTWF;
+        WormData.Features{col}='Tail_CTWF';
+        col=col+1;
+    end
     if get(handles.check_rid,'Value')
         WormData.X(i,col)=handles.Masks(i).RID;
         WormData.Features{col}='RawIntegratedDensity';
         col=col+1;
-    end
+    end 
     if get(handles.check_bodybf,'Value')
         WormData.X(i,col)=handles.Masks(i).HeadBF;
         WormData.Features{col}='HeadBF';
@@ -1430,8 +1459,10 @@ for i=1:length(handles.Masks)
     WormData.Names(i,1)={handles.Masks(i).Filenames};
 end
 
-if all(~iscell(WormData.Y))
-    WormData.Y=num2cell(WormData.Y);
+if isfield(WormData,'Y')
+    if all(~iscell(WormData.Y))
+        WormData.Y=num2cell(WormData.Y);
+    end
 end
 
 %Add Peak Sizes
@@ -1445,6 +1476,9 @@ if get(handles.check_peaks,'Value')
         end
     end
 end
+
+% --- Executes on button press in check_ht_ctfw.
+function check_ht_ctfw_Callback(hObject, eventdata, handles)
 
 %% --- Executes on button press in back.%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function backtool_ClickedCallback(hObject, eventdata, handles)
@@ -1617,3 +1651,5 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function export_Callback(hObject, eventdata, handles)
+
+
