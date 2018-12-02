@@ -708,14 +708,14 @@ for folder=1:length(folders) %folders loop
         imgnum=0;
         
         for img=1:length(dirfiles) %images in folder loop
-            cons=[~isempty(strfind(dirfiles(img).name,'GFP')), isempty(strfind(dirfiles(img).name,'tif'))];
-            if  any(cons) %Skip if not a tiff file, or if has GFP in name.
+            conds=[isempty(strfind(dirfiles(img).name,'.tif'))];
+            if  any(conds) %Skip if not a tiff file, or if has GFP in name.
                 continue
             end
             imgnum=imgnum+1;
             filepath=[handles.indir '\'];
             filename=dirfiles(img).name;
-%             try
+            try
                 %Reset
                 if isfield(handles,'Planes')
                     handles=rmfield(handles,'Planes');
@@ -740,7 +740,8 @@ for folder=1:length(folders) %folders loop
                     end
                     tempimg=handles.Planes{i}(:,:,1);
                     tempimg=tempimg(tempimg>0.2*mean(mean(tempimg)));
-                    modes(i)=mode(mode(tempimg));
+%                     save('DataforAdam','handles','tempimg')
+                    modes(i)=mode(tempimg);
                     handles.planenames{i}=['Plane ' num2str(i)];
                 end
                 BFind=find(modes==max(modes));
@@ -794,9 +795,12 @@ for folder=1:length(folders) %folders loop
                 pause(0.0000001)
                 save_worms_Callback(hObject, eventdata, handles)
                 handles=guidata(hObject);
-%             catch
-%                 continue
-%             end
+            catch
+                set(handles.status,'string',sprintf('Status: Image %d, Failed to Load!',imgnum))
+                fprintf('Failed to process file: %s.\n',[filepath filename]);
+                pause(1);
+                continue
+            end
         end
 end
 Congratulations()
