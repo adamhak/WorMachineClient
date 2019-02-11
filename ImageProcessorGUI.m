@@ -26,15 +26,17 @@ cd(PATHSTR);
 handles.output = hObject;
 handles.settings=2;
 handles.saved=0;
+handles.filesep=filesep;
 
 %Display Logo
-logo=imread('lib\WMlogo_Small.png');
+logo=imread(['lib' handles.filesep 'WMlogo_Small.png']);
 axes(handles.logo_axes); imshow(logo);
 guidata(hObject, handles);
 
 function varargout = ImageProcessorGUI_OutputFcn(hObject, eventdata, handles) 
+if isfield(handles,'output')
 varargout{1} = handles.output;
-
+end
 
 
 %% IMPORT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,7 +125,7 @@ try
     set(handles.planes_list,'Value',BFind(1))
     %Save Paths
     pathind=find(Images{BFind(1),2}==';',1,'first');
-    pathend=find(Images{BFind(1),2}=='\',1,'last');
+    pathend=find(Images{BFind(1),2}==handles.filesep,1,'last');
     if isempty(pathind)
         pathind=length(Images{BFind(1),2})+1;
     end
@@ -584,7 +586,7 @@ if logical(get(handles.mask_save,'Value'))
         handles.ClsdWorms{k}=imfill(handles.ClsdWorms{k},'holes');
         handles.ClsdWorms{k}=handles.ClsdWorms{k}((pad+1):(end-pad),(pad+1):(end-pad));
         imshow(handles.ClsdWorms{k});
-        imwrite(handles.ClsdWorms{k},[handles.outpath,'/Masks/',name],'bmp');
+        imwrite(handles.ClsdWorms{k},[handles.outpath,handles.filesep 'Masks' handles.filesep,name],'bmp');
         pause(0.00000001)
     end
 end
@@ -601,7 +603,7 @@ if logical(get(handles.org_save,'Value'))
         name=sprintf('Worm_%s.bmp',wormname);
         set(handles.savetext,'string',name);
         imshow(handles.OrgWorms{k});
-        imwrite(handles.OrgWorms{k},[handles.outpath,'/Originals/',name],'tif');
+        imwrite(handles.OrgWorms{k},[handles.outpath,handles.filesep, 'Originals',handles.filesep,name],'tif');
         pause(0.00000001)
     end
 end
@@ -653,7 +655,7 @@ if logical(get(handles.overlap_save,'Value')) || logical(get(handles.allplanes_c
                 if ~isempty(handles.OvlpWorms{k})
                 set(handles.savetext,'string',name);
                 imshow(handles.OvlpWorms{k});
-                imwrite(handles.OvlpWorms{k},[handles.outpath,'/' foldname '/',name],'tif');
+                imwrite(handles.OvlpWorms{k},[handles.outpath,handles.filesep, foldname, handles.filesep,name],'tif');
                 pause(0.0000001)
                 end
         end
@@ -713,7 +715,7 @@ for folder=1:length(folders) %folders loop
                 continue
             end
             imgnum=imgnum+1;
-            filepath=[handles.indir '\'];
+            filepath=[handles.indir handles.filesep];
             filename=dirfiles(img).name;
             try
                 %Reset
@@ -879,4 +881,4 @@ function about_Callback(hObject, eventdata, handles)
 web('http://www.odedrechavilab.com/')
 
 function manual_Callback(hObject, eventdata, handles)
-open('lib/WorMachine_Manual.pdf')
+open(['lib' handles.filesep 'WorMachine_Manual.pdf'])

@@ -23,12 +23,13 @@ end
 % --- Executes just before WorMachine is made visible.
 function WorMachine_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.filesep=filesep;
 
 clc
 addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
 cd(PATHSTR);
-handles.logo=imread('WMlogo.png');
+handles.logo=imread(['lib' handles.filesep 'WMlogo.png']);
 axes(handles.axes1); imshow(handles.logo);
 k=get(gcf,'color');
 set(gcf,'color','w')
@@ -41,8 +42,9 @@ guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = WorMachine_OutputFcn(hObject, eventdata, handles) 
+if isfield(handles,'output')
 varargout{1} = handles.output;
-
+end
 
 % --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)

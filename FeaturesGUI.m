@@ -21,6 +21,7 @@ end
 %% --- Executes just before FeaturesGUI is made visible.
 function FeaturesGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.filesep=filesep;
 clc
 addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
@@ -33,14 +34,15 @@ if length(varargin)>0
 end
 
 %Display Logo
-logo=imread('lib\WMlogo_Small.png');
+logo=imread(['lib' handles.filesep 'WMlogo_Small.png']);
 axes(handles.logo_axes); imshow(logo);
 guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = FeaturesGUI_OutputFcn(hObject, eventdata, handles) 
+if isfield(handles,'output')
 varargout{1} = handles.output;
-
+end
 
 %% Filepath for Image Importation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function import_Callback(hObject, eventdata, handles)
@@ -167,7 +169,7 @@ if ~isfield(handles,'dirname')
 end
 
 %Check valid path
-if isempty(strfind(handles.dirname,'Masks')) && ~exist([handles.dirname '\Masks'],'dir')
+if isempty(strfind(handles.dirname,'Masks')) && ~exist([handles.dirname handles.filesep 'Masks'],'dir')
     set(handles.current_worm,'string','No Worms in Folder!');
     return
 end
@@ -203,8 +205,8 @@ set(handles.labeled,'string','');
 
 %Load Mask Files
 if ~strcmp(handles.dirname(end-4:end),'Masks')
-    handles.maindir=[handles.dirname '\'];
-    handles.dirname=[handles.dirname '\Masks'];
+    handles.maindir=[handles.dirname handles.filesep];
+    handles.dirname=[handles.dirname handles.filesep 'Masks'];
     set(handles.filespath,'string',handles.dirname)
 else
     handles.maindir=handles.dirname(1:end-5);
@@ -291,7 +293,7 @@ WormNetImages=prepare4wormnet(CurrentImages);
 if ~isfield(handles,'WormNet')
     set(handles.current_worm,'string','Classifying Worms...');
     pause(0.00001)
-    temp=load('lib\WormNet.mat');
+    temp=load(['lib' handles.filesep 'WormNet.mat']);
     handles.WormNet=temp.WormNet;
     handles.NetOptions=temp.options;
 end
@@ -636,7 +638,7 @@ for i=1:length(handles.liststring)
                  
         handles.Masks(i).WormFlag=0;
         
-    catch
+    catch ME
         handles.Masks(i).WormFlag=1;
         handles.liststring{i}=sprintf('<HTML><BODY bgcolor="%s">%s', 'red', handles.Masks(i).Filenames);
         handles.Masks(i).MidWidth=NaN;
@@ -652,6 +654,11 @@ for i=1:length(handles.liststring)
         handles.Masks(i).PosteriorBodyBF=NaN;
         handles.Masks(i).C1=[1 1 1];
         handles.Masks(i).C2=[1 1 1];
+                    
+        fileID = fopen('errorlog.txt','a+');
+        fprintf(fileID,'\n\n****** Error in: %s \n\n',handles.Masks(i).Filenames)
+        fprintf(fileID, '%s', ME.getReport('extended', 'hyperlinks','off'))
+        fclose(fileID);
     end
 end
 
@@ -1544,7 +1551,7 @@ WormNetImages=prepare4wormnet(CurrentImages);
 if ~isfield(handles,'WormNet')
     set(handles.current_worm,'string','ReTraining WormNet...');
     pause(0.00001)
-    temp=load('lib\WormNet.mat');
+    temp=load(['lib' handles.filesep 'WormNet.mat']);
     handles.WormNet=temp.WormNet;
     handles.NetOptions=temp.options;
 end
@@ -1564,11 +1571,11 @@ guidata(hObject, handles);
 
 %--------------------------------------------------------------------------
 function save_wormnet_Callback(hObject, eventdata, handles)
-temp=load('lib\WormNet.mat');
+temp=load(['lib' handles.filesep 'WormNet.mat']);
 WormNet=handles.WormNet;
 layers=temp.layers; imds=temp.imds; trainData=temp.trainData;
 testData=temp.testData; options=temp.options;
-save('lib/WormNet.mat','WormNet','layers','imds','trainData','testData','options')
+save(['lib' handles.filesep 'WormNet.mat'],'WormNet','layers','imds','trainData','testData','options')
 set(handles.current_worm,'string','New WormNet Saved!');
 
 
@@ -1578,8 +1585,7 @@ function about_Callback(hObject, eventdata, handles)
 web('http://www.odedrechavilab.com/')
 
 function manual_Callback(hObject, eventdata, handles)
-open('lib/WorMachine_Manual.pdf')
-
+open(['lib' handles.filesep 'WorMachine_Manual.pdf'])
 
 
 %% Key Shortcuts %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -22,19 +22,21 @@ end
 % --- Executes just before LearnerGUI is made visible.
 function LearnerGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
+handles.filesep=filesep;
 clc;
 addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
 cd(PATHSTR);
 %Display Logo
-logo=imread('lib\WMlogo_Small.png');
+logo=imread(['lib' handles.filesep 'WMlogo_Small.png']);
 axes(handles.logo_axes); imshow(logo);
 guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = LearnerGUI_OutputFcn(hObject, eventdata, handles) 
+if isfield(handles,'output')
 varargout{1} = handles.output;
-
+end
 
 %% Import WormData. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Import_Callback(hObject, eventdata, handles)
@@ -458,4 +460,4 @@ function about_Callback(hObject, eventdata, handles)
 web('http://www.odedrechavilab.com/')
 
 function manual_Callback(hObject, eventdata, handles)
-open('lib/WorMachine_Manual.pdf')
+open(['lib' handles.filesep 'WorMachine_Manual.pdf'])
