@@ -27,6 +27,7 @@ addpath(genpath('lib'));
 [PATHSTR,~,~]=fileparts((which(mfilename)));
 cd(PATHSTR);
 handles.datasaved=1;
+handles.fluortype=2;
 if length(varargin)>0
     handles.dirname=varargin{1}(1:end-1);
     loadimages_Callback(hObject, eventdata, handles)
@@ -410,12 +411,12 @@ if isfield(handles, 'imgtype')
             if isfield(handles.Masks, 'FluorImg')
             imshow(handles.Masks(ind).FluorImg);
                 if isfield(handles.Masks, 'Peaks') && handles.Masks(ind).NPeaks>0
-                    if ~get(handles.color_peaks,'Value')
+                    if handles.fluortype==2
                     hold on
                     scatter(handles.Masks(ind).Peaks(:,1),handles.Masks(ind).Peaks(:,2),(handles.Masks(ind).PeakAreas/max(handles.Masks(ind).PeakAreas))*80,'MarkerEdgeColor',[1 0.2 0.2]);
     %                 scatter(handles.Masks(ind).Background(:,1),handles.Masks(ind).Background(:,2),10,'x','MarkerEdgeColor',[1 0.3 0.2]);
                     hold off
-                    else
+                    elseif handles.fluortype==3
                         img=handles.Masks(ind).LabeledImage;
                         RGB=RGBfromLabels(img);
                         imshowpair(RGB,handles.Masks(ind).FluorImg,'blend');
@@ -1059,7 +1060,7 @@ if isfield(handles.Masks,'FluorImg')
         handles.Masks(i).Peaks=NewPeaks;
         handles.Masks(i).LabeledImage=FinalImg;
         handles.Masks(i).PeakAreas=PeakAreas;
-        catch
+        catch ME
             disp(['Worm Failed Fluorescent Analysis: ' handles.Masks(i).Filenames])
             handles.Masks(i).MeanPeaks=NaN;
             handles.Masks(i).STDPeaks=NaN;
@@ -1071,6 +1072,11 @@ if isfield(handles.Masks,'FluorImg')
             handles.Masks(i).Head_CTWF=NaN;
             handles.Masks(i).Tail_CTWF=NaN;
             handles.Masks(i).LabeledImage=zeros(size(handles.Masks(i).FluorImg_noGS));
+ 
+            fileID = fopen('errorlog.txt','a+');
+            fprintf(fileID,'\n\n****** Error in: %s \n\n',handles.Masks(i).Filenames)
+            fprintf(fileID, '%s', ME.getReport('extended', 'hyperlinks','off'))
+            fclose(fileID);
         end
     end
     %Update checkbox and status
@@ -1090,10 +1096,10 @@ uicontrol(handles.masknames)
 guidata(hObject, handles);
 masks=handles.Masks;
 
-% --- Executes on button press in color_peaks.
-function color_peaks_Callback(hObject, eventdata, handles)
-masknames_Callback(hObject, eventdata, handles)
-guidata(hObject, handles);
+% % --- Executes on button press in color_peaks.
+% function color_peaks_Callback(hObject, eventdata, handles)
+% masknames_Callback(hObject, eventdata, handles)
+% guidata(hObject, handles);
 
 
 %% Labeling %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1659,3 +1665,19 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 function export_Callback(hObject, eventdata, handles)
 
 
+% --- Executes when selected object is changed in fluortype.
+function fluortype_SelectionChangedFcn(hObject, eventdata, handles)
+axes(handles.fluorimg);
+fluortype=strtrim(get(eventdata.NewValue,'Tag'));
+switch fluortype 
+    case 'clear_image_radio'
+        handles.fluortype=1;
+    case 'circle_peaks_radio'
+        handles.fluortype=2;
+    case 'color_peaks_radio'
+        handles.fluortype=3;
+end
+guidata(hObject);
+masknames_Callback(hObject, eventdata, handles)
+uicontrol(handles.masknames)
+guidata(hObject, handles);
